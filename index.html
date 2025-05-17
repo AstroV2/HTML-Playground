@@ -96,7 +96,7 @@
     .studio-actions button:hover {
       background: #38bdf8;
     }
-    /* Profile Modal */
+    /* Profile Modal (permanent, can't change) */
     .profile-modal {
       display: none;
       position: fixed;
@@ -165,6 +165,11 @@
     }
     .profile-content button:hover {
       background: #38bdf8;
+    }
+    .profile-content .warning {
+      color: #ff9f43;
+      margin-bottom: 1.2em;
+      font-size: 1.04em;
     }
     /* Publish Modal/Menu and other modals */
     .modal {
@@ -355,6 +360,12 @@
       box-shadow: 0 1px 6px #38bdf880;
       letter-spacing: 0.04em;
     }
+    .profile-lock {
+      color: #e85d04;
+      font-size: 1.12em;
+      margin-bottom: 0.8em;
+      font-weight: 600;
+    }
     /* Iframe/modal output */
     .iframe-modal {
       display: none;
@@ -529,10 +540,14 @@
     </div>
   </div>
 
-  <!-- Profile Modal (forced if not set) -->
+  <!-- Profile Modal (permanent, can't change) -->
   <div class="profile-modal" id="profile-modal">
     <div class="profile-content">
       <h2>Set Up Your Profile</h2>
+      <div class="warning">
+        This profile is permanent and <b>cannot be changed</b> later.<br>
+        Choose carefully.
+      </div>
       <label for="profile-name">Your Name (required):</label>
       <input type="text" id="profile-name" maxlength="30" placeholder="e.g. AstroV2" required>
       <label for="profile-bio">Short Bio (optional):</label>
@@ -598,14 +613,17 @@
     Not connected to a server; anyone using this browser can see and search your published games.
   </footer>
   <script>
-    // Profile logic
+    // Permanent profile logic
     function getProfile() {
       let p = {};
       try { p = JSON.parse(localStorage.getItem('htmlgames-profile')||'{}'); } catch{}
       return p;
     }
     function setProfile(profile) {
+      // Only allow setting if it's not already set!
+      if (localStorage.getItem('htmlgames-profile')) return false;
       localStorage.setItem('htmlgames-profile', JSON.stringify(profile));
+      return true;
     }
     function requireProfile(forceShow) {
       const profile = getProfile();
@@ -614,12 +632,17 @@
         return false;
       } else {
         document.getElementById('profile-modal').style.display = 'none';
-        if (forceShow) alert('Profile loaded: ' + profile.name);
         return true;
       }
     }
-    // Save profile button
+
+    // Save profile button (only once)
     document.getElementById('save-profile').onclick = function() {
+      if (localStorage.getItem('htmlgames-profile')) {
+        alert("Profile is already set and cannot be changed.");
+        document.getElementById('profile-modal').style.display = 'none';
+        return;
+      }
       const name = document.getElementById('profile-name').value.trim();
       const bio = document.getElementById('profile-bio').value.trim();
       if (!name) {
@@ -630,11 +653,18 @@
       document.getElementById('profile-modal').style.display = 'none';
     };
 
-    // Show profile modal if not set, always enforced before publish or comment
+    // Block closing or changing profile after set
+    document.getElementById('profile-name').onkeydown = function(e) {
+      if (localStorage.getItem('htmlgames-profile')) e.preventDefault();
+    };
+    document.getElementById('profile-bio').onkeydown = function(e) {
+      if (localStorage.getItem('htmlgames-profile')) e.preventDefault();
+    };
+
+    // Show permanent profile modal on load if not set
     window.addEventListener('DOMContentLoaded', () => {
-      const profile = getProfile();
-      if (!profile.name) {
-        setTimeout(() => requireProfile(), 300);
+      if (!localStorage.getItem('htmlgames-profile')) {
+        document.getElementById('profile-modal').style.display = 'flex';
       }
     });
 
@@ -702,7 +732,7 @@
       if (e.target === publishModal) publishModal.style.display = 'none';
       if (e.target === document.getElementById('iframe-modal')) closeIframeModal();
       if (e.target === forkModal) forkModal.style.display = 'none';
-      if (e.target === document.getElementById('profile-modal')) document.getElementById('profile-modal').style.display = 'none';
+      // Profile modal cannot be closed if not set
     };
 
     // --- Publish game ---
