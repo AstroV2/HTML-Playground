@@ -96,6 +96,77 @@
     .studio-actions button:hover {
       background: #38bdf8;
     }
+    /* Profile Modal */
+    .profile-modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0; top: 0;
+      width: 100vw; height: 100vh;
+      background: #000a;
+      justify-content: center;
+      align-items: center;
+    }
+    .profile-content {
+      background: #23232a;
+      border-radius: 14px;
+      padding: 2em 1.3em 1.1em 1.3em;
+      box-shadow: 0 6px 32px #000a;
+      min-width: 340px;
+      max-width: 98vw;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      text-align: center;
+    }
+    .profile-content h2 {
+      margin-top: 0;
+      color: #7dd3fc;
+      font-size: 1.35rem;
+      margin-bottom: 1.2em;
+    }
+    .profile-content label {
+      display: block;
+      text-align: left;
+      margin-bottom: 0.2em;
+      color: #d1d5db;
+      font-weight: 500;
+    }
+    .profile-content input[type="text"] {
+      width: 100%;
+      border-radius: 8px;
+      border: none;
+      background: #18181b;
+      color: #fafafa;
+      font-family: inherit;
+      font-size: 1em;
+      padding: 0.7em;
+      margin-bottom: 1em;
+      margin-top: 0.2em;
+      box-sizing: border-box;
+    }
+    .profile-content .profile-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1.2em;
+      margin-top: 1em;
+    }
+    .profile-content button {
+      background: #7dd3fc;
+      color: #23232a;
+      border: none;
+      border-radius: 7px;
+      padding: 0.6em 1.7em;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .profile-content button:hover {
+      background: #38bdf8;
+    }
+    /* Publish Modal/Menu and other modals */
     .modal {
       display: none;
       position: fixed;
@@ -212,7 +283,7 @@
       flex-direction: column;
       justify-content: space-between;
       position: relative;
-      min-height: 185px;
+      min-height: 200px;
     }
     .game-card:hover {
       transform: translateY(-4px) scale(1.03);
@@ -230,6 +301,11 @@
       margin: 0 0 0.85em 0;
       flex: 1;
     }
+    .game-author {
+      font-size: 0.97em;
+      color: #ffed7b;
+      margin-bottom: 0.45em;
+    }
     .game-metrics {
       font-size: 0.95em;
       color: #b9e0ff;
@@ -245,7 +321,7 @@
       align-items: center;
       margin-top: 0.4em;
     }
-    .game-play-btn, .game-fork-btn {
+    .game-play-btn, .game-fork-btn, .game-delete-btn {
       background: #7dd3fc;
       color: #23232a;
       border: none;
@@ -256,9 +332,16 @@
       cursor: pointer;
       transition: background 0.12s;
     }
-    .game-play-btn:hover, .game-fork-btn:hover {
+    .game-play-btn:hover, .game-fork-btn:hover, .game-delete-btn:hover {
       background: #38bdf8;
     }
+    .game-delete-btn {
+      background: #ff9f43;
+      color: #191922;
+      margin-left: 0.3em;
+      font-size: 0.98em;
+    }
+    .game-delete-btn:hover { background: #e85d04; color: #fff; }
     .fork-badge {
       position: absolute;
       right: 14px;
@@ -365,6 +448,10 @@
       font-size: 0.98em;
       word-break: break-word;
     }
+    .comment-list .author {
+      color: #7dd3fc;
+      font-weight: bold;
+    }
     .comment-form {
       display: flex;
       gap: 0.6em;
@@ -442,6 +529,20 @@
     </div>
   </div>
 
+  <!-- Profile Modal (forced if not set) -->
+  <div class="profile-modal" id="profile-modal">
+    <div class="profile-content">
+      <h2>Set Up Your Profile</h2>
+      <label for="profile-name">Your Name (required):</label>
+      <input type="text" id="profile-name" maxlength="30" placeholder="e.g. AstroV2" required>
+      <label for="profile-bio">Short Bio (optional):</label>
+      <input type="text" id="profile-bio" maxlength="80" placeholder="e.g. HTML game enthusiast">
+      <div class="profile-actions">
+        <button id="save-profile">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Publish Modal/Menu -->
   <div class="modal" id="publish-modal">
     <div class="modal-content">
@@ -497,6 +598,46 @@
     Not connected to a server; anyone using this browser can see and search your published games.
   </footer>
   <script>
+    // Profile logic
+    function getProfile() {
+      let p = {};
+      try { p = JSON.parse(localStorage.getItem('htmlgames-profile')||'{}'); } catch{}
+      return p;
+    }
+    function setProfile(profile) {
+      localStorage.setItem('htmlgames-profile', JSON.stringify(profile));
+    }
+    function requireProfile(forceShow) {
+      const profile = getProfile();
+      if (!profile.name || !profile.name.trim()) {
+        document.getElementById('profile-modal').style.display = 'flex';
+        return false;
+      } else {
+        document.getElementById('profile-modal').style.display = 'none';
+        if (forceShow) alert('Profile loaded: ' + profile.name);
+        return true;
+      }
+    }
+    // Save profile button
+    document.getElementById('save-profile').onclick = function() {
+      const name = document.getElementById('profile-name').value.trim();
+      const bio = document.getElementById('profile-bio').value.trim();
+      if (!name) {
+        alert("Name is required!");
+        return;
+      }
+      setProfile({name, bio});
+      document.getElementById('profile-modal').style.display = 'none';
+    };
+
+    // Show profile modal if not set, always enforced before publish or comment
+    window.addEventListener('DOMContentLoaded', () => {
+      const profile = getProfile();
+      if (!profile.name) {
+        setTimeout(() => requireProfile(), 300);
+      }
+    });
+
     // Utility: Escape HTML for display
     function escapeHtml(str) {
       return (str||"").replace(/[&<>"']/g, function (m) {
@@ -532,6 +673,7 @@
     const publishModal = document.getElementById('publish-modal');
     const closePublishBtn = document.getElementById('close-publish');
     let currentHtmlToPublish = "";
+    let forkFromId = null; // used for fork
 
     previewBtn.onclick = () => {
       const code = studioInput.value.trim();
@@ -544,6 +686,7 @@
     };
 
     publishBtn.onclick = () => {
+      if (!requireProfile()) return;
       const code = studioInput.value.trim();
       if (!code) {
         alert("Paste your HTML code first!");
@@ -559,12 +702,15 @@
       if (e.target === publishModal) publishModal.style.display = 'none';
       if (e.target === document.getElementById('iframe-modal')) closeIframeModal();
       if (e.target === forkModal) forkModal.style.display = 'none';
+      if (e.target === document.getElementById('profile-modal')) document.getElementById('profile-modal').style.display = 'none';
     };
 
     // --- Publish game ---
     document.getElementById('publish-game').onclick = () => {
+      if (!requireProfile()) return;
       const title = document.getElementById('game-title').value.trim();
       const desc = document.getElementById('game-desc').value.trim();
+      const profile = getProfile();
       if (!title || !desc) {
         alert("Please enter a title and description for your game.");
         return;
@@ -578,8 +724,10 @@
         created: Date.now(),
         playerCount: 0,
         joinCount: 0,
-        forkOf: null,
-        comments: []
+        forkOf: forkFromId || null,
+        comments: [],
+        author: profile.name,
+        authorBio: profile.bio||""
       };
       let games = [];
       try {
@@ -590,6 +738,7 @@
       publishModal.style.display = 'none';
       studioInput.value = "";
       previewArea.style.display = 'none';
+      forkFromId = null;
       alert("Game published! Find it in the Games Gallery.");
       showPage('games');
     };
@@ -609,6 +758,7 @@
           g.title.toLowerCase().includes(term) || g.desc.toLowerCase().includes(term)
         );
       }
+      const profile = getProfile();
       list.innerHTML = "";
       if (games.length === 0) {
         list.innerHTML = `<div style="color:#7dd3fc;font-size:1.1em;">No games found. Be the first to publish one!</div>`;
@@ -619,6 +769,7 @@
         card.className = 'game-card';
         card.innerHTML = `
           <div class="game-title">${escapeHtml(game.title)}</div>
+          <div class="game-author">By: <b>${escapeHtml(game.author||"Unknown")}</b></div>
           <div class="game-desc">${escapeHtml(game.desc)}</div>
           <div class="game-metrics">
             <span title="Players currently playing"><b>Players:</b> ${game.playerCount||0}</span>
@@ -627,6 +778,7 @@
           <div class="game-actions">
             <button class="game-play-btn">Play</button>
             <button class="game-fork-btn">Fork</button>
+            ${profile.name === game.author ? `<button class="game-delete-btn">Delete</button>` : ""}
           </div>
         `;
         if (game.forkOf) {
@@ -643,9 +795,29 @@
           e.stopPropagation();
           openForkModal(game);
         };
+        if (profile.name === game.author) {
+          card.querySelector('.game-delete-btn').onclick = (e) => {
+            e.stopPropagation();
+            if (confirm("Are you sure you want to delete this game? This cannot be undone.")) {
+              deleteGame(game.id);
+              renderGames(document.getElementById('search-bar').value.trim());
+            }
+          };
+        }
         card.onclick = () => openIframeModal(game);
         list.appendChild(card);
       }
+    }
+
+    // --- Delete game (only author can delete) ---
+    function deleteGame(gameId) {
+      let games = [];
+      try {
+        games = JSON.parse(localStorage.getItem('html-games-db') || "[]");
+      } catch {}
+      const profile = getProfile();
+      games = games.filter(g => g.id !== gameId || g.author !== profile.name);
+      localStorage.setItem('html-games-db', JSON.stringify(games));
     }
 
     // --- Search bar ---
@@ -705,11 +877,11 @@
     const forkPreviewArea = document.getElementById('fork-preview-area');
     const forkIframe = document.getElementById('fork-iframe');
     let forkHtml = "";
-    let forkFromId = null;
 
     closeForkBtn.onclick = () => { forkModal.style.display = 'none'; };
 
     function openForkModal(gameObj) {
+      if (!requireProfile()) return;
       forkInput.value = gameObj.html;
       forkHtml = gameObj.html;
       forkFromId = gameObj.id;
@@ -726,6 +898,7 @@
       forkPreviewArea.style.display = '';
     };
     forkPublishBtn.onclick = () => {
+      if (!requireProfile()) return;
       const code = forkInput.value.trim();
       if (!code) {
         alert("Paste your HTML code first!");
@@ -737,41 +910,6 @@
       forkModal.style.display = 'none';
       // Show regular publish modal, but it's a fork
       publishModal.style.display = 'flex';
-    };
-
-    // --- Publish forked game ---
-    // Overwrite the publish game handler to handle forkOf
-    document.getElementById('publish-game').onclick = () => {
-      const title = document.getElementById('game-title').value.trim();
-      const desc = document.getElementById('game-desc').value.trim();
-      if (!title || !desc) {
-        alert("Please enter a title and description for your game.");
-        return;
-      }
-      // Save to localStorage
-      const game = {
-        id: 'game-' + Date.now() + '-' + Math.floor(Math.random()*100000),
-        title,
-        desc,
-        html: currentHtmlToPublish,
-        created: Date.now(),
-        playerCount: 0,
-        joinCount: 0,
-        forkOf: forkFromId || null,
-        comments: []
-      };
-      let games = [];
-      try {
-        games = JSON.parse(localStorage.getItem('html-games-db') || "[]");
-      } catch {}
-      games.push(game);
-      localStorage.setItem('html-games-db', JSON.stringify(games));
-      publishModal.style.display = 'none';
-      studioInput.value = "";
-      previewArea.style.display = 'none';
-      forkFromId = null;
-      alert("Game published! Find it in the Games Gallery.");
-      showPage('games');
     };
 
     // --- Game Metrics (player count/join count) ---
@@ -806,15 +944,16 @@
       if (!Array.isArray(game.comments)) game.comments = [];
       for (const comment of game.comments) {
         const li = document.createElement('li');
-        li.innerHTML = `<b style="color:#7dd3fc;">${escapeHtml(comment.name||"Anon")}</b>: ${escapeHtml(comment.text)}`;
+        li.innerHTML = `<span class="author">${escapeHtml(comment.name||"Anon")}</span>: ${escapeHtml(comment.text)}`;
         commentList.appendChild(li);
       }
       form.onsubmit = function(e) {
         e.preventDefault();
+        if (!requireProfile()) return;
         const text = input.value.trim();
         if (!text) return;
-        const name = prompt('Your name (optional):','');
-        game.comments.push({name: name||"Anon", text, ts: Date.now()});
+        const profile = getProfile();
+        game.comments.push({name: profile.name, text, ts: Date.now()});
         localStorage.setItem('html-games-db', JSON.stringify(games));
         input.value = '';
         renderComments(gameObj);
